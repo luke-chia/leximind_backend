@@ -1,0 +1,88 @@
+I want you to implement a new API endpoint in my Node.js + Express backend for Leximind.  
+Please follow **SOLID principles** and respect the **Clean Architecture** structure already in place.  
+Our project is structured with `infrastructure/services` and `infrastructure/adapters`.  
+We already have:
+- `infrastructure/services/pinecone.service.ts`
+- `infrastructure/adapters/rag.adapter.ts`
+
+You need to create a new feature for uploading PDF documents from the frontend.  
+
+### Requirements
+
+1. **Endpoint**
+   - Route: `POST /api/documents/upload`
+   - Accepts `multipart/form-data`
+   - Fields:
+     - `file`: the PDF document (required)
+     - `userId`: string (optional, for logging purposes)
+     - `area`: array of strings (optional)
+     - `category`: array of strings (optional)
+     - `source`: array of strings (optional)
+     - `tags`: array of strings (optional)
+
+2. **Processing flow**
+   - Extract text from the uploaded PDF (use `pdf-parse` or a similar lightweight lib).
+   - Split the text into chunks suitable for embeddings.
+   - Generate embeddings using OpenAI (`text-embedding-3-small`), via `OPENAI_API_KEY` from environment variables.
+   - Upsert embeddings into Pinecone:
+     - Use the existing `pinecone.service.ts` for Pinecone interactions.
+     - Respect `INDEX_NAME` and `NAMESPACE` from environment variables.
+     - Store metadata with each vector, for example:
+       ```json
+       {
+         "userId": "...",
+         "area": [...],
+         "category": [...],
+         "source": [...],
+         "tags": [...],
+         "text": "original text chunk"
+       }
+       ```
+
+3. **Architecture**
+   - Add a new service: `infrastructure/services/embeddings.service.ts`  
+     - Responsibilities:
+       - Interact with OpenAI API to generate embeddings.
+       - Keep this logic isolated so it can be reused by other adapters in the future.
+   - Add a new adapter: `infrastructure/adapters/upload.adapter.ts`  
+     - Responsibilities:
+       - Orchestrate the flow: receive file + metadata → call `embeddings.service.ts` → call `pinecone.service.ts`.
+       - Keep orchestration logic separate from Express routes.
+   - Add a new route/controller file: `interfaces/http/document.controller.ts`  
+     - Responsibilities:
+       - Define the Express route.
+       - Use `multer` for file upload parsing.
+       - Delegate all business logic to the adapter layer.
+
+4. **Implementation details**
+   - Use ES modules and TypeScript.
+   - Follow async/await patterns.
+   - Handle errors gracefully (invalid PDF, missing fields, OpenAI or Pinecone errors).
+   - Return a JSON response:
+     ```json
+     {
+       "status": "success",
+       "documentId": "generated-or-random-id",
+       "chunksProcessed": <number>
+     }
+     ```
+   - Store secrets/configs in environment variables (`OPENAI_API_KEY`, `PINECONE_API_KEY`, `INDEX_NAME`, `NAMESPACE`).
+   - Ensure each class or module has a single responsibility.
+
+5. **Future considerations**
+   - Even though `userId` has no functional impact now, make sure it is accepted and stored in Pinecone metadata.
+   - This will later be used for logging interactions.
+
+### Deliverables
+- `infrastructure/services/embeddings.service.ts`
+- `infrastructure/adapters/upload.adapter.ts`
+- `interfaces/http/document.controller.ts`
+- Example Express route registration in the main `app.ts` or `server.ts`
+
+### Notes
+- Do NOT use LangChain.  
+- Keep code clean, modular, and aligned with Clean Architecture and SOLID.  
+- Add comments to explain each layer’s responsibility.
+
+
+use this example VectorizaPineCone.ipynb

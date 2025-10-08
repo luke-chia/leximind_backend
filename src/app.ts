@@ -1,24 +1,27 @@
-import Server from "./presentation/server.js";
-import { envs } from "./config/";
-import { AppRoutes } from "./presentation/routes.js";
-import { MongoDatabase } from "./data/mongodb/mongo-database.js";
-
-( () => {
-    main();
-})();
+import Server from './presentation/server.js'
+import { envs } from './config/index.js'
+import { AppRoutes } from './presentation/routes.js'
+import { MongoDatabase } from './data/mongodb/mongo-database.js'
+import figlet from 'figlet'
+import chalk from 'chalk'
+;(() => {
+  main()
+})()
 
 async function main() {
-    console.log("Hello World Main");
+  console.log(
+    chalk.cyan(figlet.textSync('Leximind', { horizontalLayout: 'full' }))
+  )
 
+  /*
     await MongoDatabase.connect({
         mongoUrl: envs.MONGO_URL,
         dbName: envs.MONGO_DB_NAME
     });
-
-    const server = new Server({
-         port: envs.PORT,
-         routes: AppRoutes.routes
-    });
-    await server.start();
+    */
+  const server = new Server({
+    port: envs.PORT,
+    routes: AppRoutes.routes,
+  })
+  await server.start()
 }
-
