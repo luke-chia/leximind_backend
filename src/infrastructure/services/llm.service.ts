@@ -108,6 +108,73 @@ export class LLMService implements LLMRepository {
   }
 
   /**
+   * Genera un resumen corto de la pregunta del usuario (5 palabras o menos)
+   */
+  async generateQuestionSummary(question: string): Promise<string> {
+    try {
+      console.log(`🔤 Generando resumen para pregunta: "${question.substring(0, 50)}..."`)
+      
+      const prompt = this.getQuestionSummaryPrompt()
+      const fullPrompt = `${prompt}\n\nPregunta: "${question}"\nResumen:`
+      
+      // Usar OpenAI para generar el resumen
+      const openAIService = new OpenAIService()
+      const response = await openAIService.generateSimpleCompletion(fullPrompt)
+      
+      const summary = response.trim()
+      console.log(`✅ Resumen generado: "${summary}"`)
+      
+      // Validar que no exceda 5 palabras
+      const wordCount = summary.split(' ').length
+      if (wordCount > 5) {
+        console.warn(`⚠️ Resumen excede 5 palabras (${wordCount}), truncando...`)
+        return summary.split(' ').slice(0, 5).join(' ')
+      }
+      
+      return summary
+      
+    } catch (error) {
+      console.error('❌ Error generando resumen de pregunta:', error)
+      // Fallback: usar las primeras 3 palabras de la pregunta
+      const fallback = question.split(' ').slice(0, 3).join(' ')
+      console.log(`🔄 Usando fallback: "${fallback}"`)
+      return fallback
+    }
+  }
+
+  /**
+   * Prompt especializado para generar resúmenes de preguntas
+   */
+  private getQuestionSummaryPrompt(): string {
+    return `
+Eres un asistente especializado en crear resúmenes ultra-concisos de preguntas.
+
+TAREA: Resume la siguiente pregunta en máximo 5 palabras en español.
+
+REGLAS:
+- Máximo 5 palabras
+- Captura la esencia de la pregunta
+- Usa sustantivos y verbos clave
+- Evita artículos y preposiciones innecesarias
+- Responde SOLO el resumen, sin explicaciones
+- No uses comillas ni puntos
+
+EJEMPLOS:
+Pregunta: "¿Cuáles son los requisitos para abrir una cuenta bancaria?"
+Resumen: Requisitos cuenta bancaria
+
+Pregunta: "¿Cómo funciona el proceso de validación de tarjetas de crédito?"
+Resumen: Validación tarjetas crédito
+
+Pregunta: "¿Qué documentos necesito para solicitar un préstamo personal?"
+Resumen: Documentos préstamo personal
+
+Pregunta: "¿Cuál es el procedimiento para cancelar una tarjeta?"
+Resumen: Cancelar tarjeta procedimiento
+    `.trim()
+  }
+
+  /**
    * Define el prompt del sistema para el LLM
    */
   private getSystemPrompt(): string {

@@ -26,6 +26,7 @@ export class ProcessMessageUseCaseImpl implements ProcessMessageUseCase {
     const llmResponse = await this.llmRepository.processMessage(chatMessage)
 
     // Mapear la respuesta a DTO de presentation
-    return LLMResponseMapper.toProcessMessageResponseDto(llmResponse)
+    // Nota: El resumeQuestion se agrega en el controller, aquí usamos un placeholder
+    return LLMResponseMapper.toProcessMessageResponseDto(llmResponse, '')
   }
 }

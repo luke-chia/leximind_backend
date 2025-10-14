@@ -11,6 +11,9 @@ export interface ExternalDocument {
   updatedAt?: string
   storagePath?: string           // Path del archivo en Supabase Storage
   signedUrlExpiresAt?: string    // Fecha de expiración de la URL firmada
+  alias?: string                 // Alias del documento (campo directo)
+  description?: string           // Descripción del documento (campo directo)
+  area?: string                  // Nombre del área (relación - solo primera)
 }
 
 export class SupabaseService {
@@ -22,15 +25,16 @@ export class SupabaseService {
 
   /**
    * Obtiene todos los documentos externos desde Supabase con gestión de URLs firmadas
+   * Refactorizado para usar getDocumentById y evitar duplicación de código
    */
   async getAllDocuments(): Promise<ExternalDocument[]> {
     try {
       console.log('📄 Fetching documents from Supabase with signed URL management...')
       
-      // Consultar documentos de la base de datos
-      const { data, error } = await this.client
+      // Primero obtener solo los IDs de todos los documentos
+      const { data: documentIds, error } = await this.client
         .from('documents')
-        .select('id, storage_path, signed_url, signed_url_expires_at, original_name, file_size, content_type, created_at, updated_at')
+        .select('id')
 
       if (error) {
         console.warn('⚠️ Database table not available:', error.message)
@@ -40,25 +44,16 @@ export class SupabaseService {
 
       const documents: ExternalDocument[] = []
       
-      // Procesar cada documento para verificar/generar signed URLs
-      for (const doc of data || []) {
+      // Procesar cada documento usando getDocumentById para reutilizar lógica
+      for (const docId of documentIds || []) {
         try {
-          const processedDoc = await this.ensureValidSignedUrl(doc)
-          documents.push(processedDoc)
+          const document = await this.getDocumentById(docId.id)
+          if (document) {
+            documents.push(document)
+          }
         } catch (docError) {
-          console.warn(`⚠️ Could not process document ${doc.id}:`, docError)
-          // Incluir documento sin URL según especificación
-          documents.push({
-            id: doc.id,
-            signedUrl: '', // URL vacía si falla
-            fileName: doc.original_name,
-            fileSize: doc.file_size,
-            contentType: doc.content_type,
-            createdAt: doc.created_at,
-            updatedAt: doc.updated_at,
-            storagePath: doc.storage_path,
-            signedUrlExpiresAt: doc.signed_url_expires_at
-          })
+          console.warn(`⚠️ Could not process document ${docId.id}:`, docError)
+          // Continuar con otros documentos
         }
       }
       
@@ -74,26 +69,58 @@ export class SupabaseService {
 
   /**
    * Obtiene un documento específico por ID con gestión de URL firmada
+   * Incluye campos alias, description y área (primera área por area_id)
    */
   async getDocumentById(id: string): Promise<ExternalDocument | null> {
     try {
       console.log(`📄 Fetching document with ID: ${id}`)
       
-      const { data, error } = await this.client
+      // Query simplificada - obtener documento base primero
+      const { data: docData, error: docError } = await this.client
         .from('documents')
-        .select('id, storage_path, signed_url, signed_url_expires_at, original_name, file_size, content_type, created_at, updated_at')
+        .select(`
+          id, 
+          storage_path, 
+          signed_url, 
+          signed_url_expires_at, 
+          original_name, 
+          file_size, 
+          content_type, 
+          created_at, 
+          updated_at,
+          alias,
+          description
+        `)
         .eq('id', id)
         .single()
 
-      if (error) {
-        if (error.code === 'PGRST116') {
+      if (docError) {
+        if (docError.code === 'PGRST116') {
           console.log(`⚠️ Document not found with ID: ${id}`)
           return null
         }
-        throw new Error(`Supabase error: ${error.message}`)
+        throw new Error(`Supabase error: ${docError.message}`)
       }
 
-      const processedDoc = await this.ensureValidSignedUrl(data)
+      // Obtener la primera área por separado (menor area_id)
+      const { data: areaData, error: areaError } = await this.client
+        .from('document_areas')
+        .select(`
+          areas!inner(name)
+        `)
+        .eq('document_id', id)
+        .order('area_id', { ascending: true })
+        .limit(1)
+        .single()
+
+      // Combinar datos del documento con área (si existe)
+      const combinedDoc = {
+        ...docData,
+        document_areas: areaData ? [areaData] : []
+      }
+
+      // Procesar el documento con la nueva estructura
+      const processedDoc = await this.ensureValidSignedUrl(combinedDoc)
       console.log(`✅ Document found: ${processedDoc.fileName || 'unnamed'}`)
       return processedDoc
       
@@ -147,6 +174,7 @@ export class SupabaseService {
   /**
    * Asegura que un documento tenga una URL firmada válida
    * Regenera la URL si está expirada o falta menos de 1 día
+   * Maneja los nuevos campos alias, description y area
    */
   private async ensureValidSignedUrl(doc: any): Promise<ExternalDocument> {
     const now = new Date()
@@ -179,16 +207,28 @@ export class SupabaseService {
       }
     }
     
+    // Extraer el nombre del área de la estructura de relación
+    let areaName = ''
+    if (doc.document_areas && Array.isArray(doc.document_areas) && doc.document_areas.length > 0) {
+      const firstArea = doc.document_areas[0]
+      if (firstArea.areas && firstArea.areas.name) {
+        areaName = firstArea.areas.name
+      }
+    }
+    
     return {
       id: doc.id,
       signedUrl: currentSignedUrl,
-      fileName: doc.original_name,
+      fileName: doc.original_name || '',
       fileSize: doc.file_size,
-      contentType: doc.content_type,
+      contentType: doc.content_type || '',
       createdAt: doc.created_at,
       updatedAt: doc.updated_at,
-      storagePath: doc.storage_path,
-      signedUrlExpiresAt: doc.signed_url_expires_at
+      storagePath: doc.storage_path || '',
+      signedUrlExpiresAt: doc.signed_url_expires_at,
+      alias: doc.alias || '',           // ✅ Nuevo campo con fallback
+      description: doc.description || '', // ✅ Nuevo campo con fallback
+      area: areaName                    // ✅ Nuevo campo desde relación
     }
   }
   

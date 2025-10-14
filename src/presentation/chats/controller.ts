@@ -5,6 +5,7 @@ import { ProcessMessageDto } from '../../domain/dtos/process-message.dto.js'
 import { RAGAdapter } from '../../infrastructure/adapters/rag.adapter.js'
 import { OpenAIService } from '../../infrastructure/services/openai.service.js'
 import { PineconeService } from '../../infrastructure/services/pinecone.service.js'
+import { LLMService } from '../../infrastructure/services/llm.service.js'
 
 export class ChatsController {
   //Constructor:Inyectar de dependencias
@@ -37,10 +38,22 @@ export class ChatsController {
         }`
       )
 
+      // ✅ NUEVO: Generar resumen de la pregunta en paralelo
+      const llmService = new LLMService()
+      const resumeQuestionPromise = llmService.generateQuestionSummary(
+        processMessageDto!.message
+      )
+
       // Procesar el mensaje usando el caso de uso
-      const response = await this.processMessageUseCase.execute(
+      const responsePromise = this.processMessageUseCase.execute(
         processMessageDto!
       )
+
+      // Esperar ambas operaciones en paralelo
+      const [response, resumeQuestion] = await Promise.all([
+        responsePromise,
+        resumeQuestionPromise
+      ])
 
       // Log de fuentes encontradas
       if (response.sources && response.sources.length > 0) {
@@ -54,7 +67,15 @@ export class ChatsController {
         console.log('📚 No se encontraron fuentes para esta consulta')
       }
 
-      return res.status(200).json(response)
+      // ✅ NUEVO: Agregar resumeQuestion a la respuesta
+      const enhancedResponse = {
+        ...response,
+        resumeQuestion
+      }
+
+      console.log(`🔤 Resumen de pregunta agregado: "${resumeQuestion}"`)
+
+      return res.status(200).json(enhancedResponse)
     } catch (error) {
       return this.handleError(error, res)
     }

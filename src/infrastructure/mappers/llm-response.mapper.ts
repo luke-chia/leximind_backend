@@ -8,7 +8,8 @@ import { Source } from '../../domain/entities/source.entity.js'
 export class LLMResponseMapper {
 
   static toProcessMessageResponseDto(
-    llmResponse: LLMResponse
+    llmResponse: LLMResponse,
+    resumeQuestion: string  // ✅ NUEVO PARÁMETRO - Resumen de la pregunta
   ): ProcessMessageResponseDto {
     const sourcesDto: SourceDto[] = llmResponse.sources.map(source => 
       this.toSourceDto(source)
@@ -17,7 +18,8 @@ export class LLMResponseMapper {
     return new ProcessMessageResponseDto(
       llmResponse.response,
       llmResponse.timestamp.toISOString(),
-      sourcesDto
+      sourcesDto,
+      resumeQuestion  // ✅ NUEVO CAMPO
     )
   }
 

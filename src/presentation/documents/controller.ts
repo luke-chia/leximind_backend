@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import { UploadAdapter } from '../../infrastructure/adapters/upload.adapter.js'
+import { CacheService } from '../../infrastructure/services/cache.service.js'
 
 /**
  * DocumentsController
@@ -154,6 +155,135 @@ export class DocumentsController {
         timestamp: new Date().toISOString(),
         error: 'Health check failed',
         message: error instanceof Error ? error.message : 'Unknown error'
+      })
+    }
+  }
+
+  /**
+   * Get document cache statistics
+   * GET /api/documents/stats
+   */
+  getDocumentStats = async (req: Request, res: Response): Promise<Response> => {
+    try {
+      console.log('📊 Document statistics requested')
+
+      // Obtener estadísticas del cache
+      const stats = CacheService.getStats()
+      
+      // Obtener información adicional
+      const documentsWithUrls = CacheService.getDocumentsWithSignedUrls()
+      const documentsWithoutUrls = CacheService.getDocumentsWithoutSignedUrls()
+
+      return res.status(200).json({
+        status: 'success',
+        timestamp: new Date().toISOString(),
+        cache: {
+          totalDocuments: stats.totalDocuments,
+          totalSizeMB: +(stats.totalSize / 1024 / 1024).toFixed(2),
+          averageSizeMB: +(stats.averageSize / 1024 / 1024).toFixed(2),
+          lastUpdated: stats.lastUpdated,
+          cacheAgeMinutes: Math.round(stats.cacheAge / 1000 / 60)
+        },
+        signedUrls: {
+          documentsWithUrls: stats.documentsWithSignedUrls,
+          documentsWithoutUrls: stats.documentsWithoutSignedUrls,
+          urlCoverage: stats.totalDocuments > 0 
+            ? +((stats.documentsWithSignedUrls / stats.totalDocuments) * 100).toFixed(1)
+            : 0
+        }
+      })
+
+    } catch (error) {
+      console.error('❌ Error getting document statistics:', error)
+      
+      return res.status(500).json({
+        status: 'error',
+        timestamp: new Date().toISOString(),
+        error: 'stats_error',
+        message: error instanceof Error ? error.message : 'Failed to retrieve statistics'
+      })
+    }
+  }
+
+  /**
+   * Get all documents from cache with pagination
+   * GET /api/documents/list?limit=10&offset=0
+   */
+  getCachedDocuments = async (req: Request, res: Response): Promise<Response> => {
+    try {
+      console.log('📦 Cached documents requested')
+
+      // Parsear parámetros de paginación
+      const limit = parseInt(req.query.limit as string) || 10
+      const offset = parseInt(req.query.offset as string) || 0
+
+      // Validar parámetros de paginación
+      if (limit < 1 || limit > 100) {
+        return res.status(400).json({
+          status: 'error',
+          error: 'invalid_limit',
+          message: 'Limit must be between 1 and 100'
+        })
+      }
+
+      if (offset < 0) {
+        return res.status(400).json({
+          status: 'error',
+          error: 'invalid_offset',
+          message: 'Offset must be 0 or greater'
+        })
+      }
+
+      // Obtener documentos del cache
+      const allDocuments = CacheService.getDocuments()
+      
+      // Aplicar paginación
+      const paginatedDocuments = allDocuments.slice(offset, offset + limit)
+      
+      // Obtener información del cache
+      const cacheInfo = CacheService.getCacheInfo()
+
+      console.log(`📦 Returning ${paginatedDocuments.length} documents (${offset}-${offset + paginatedDocuments.length} of ${allDocuments.length})`)
+
+      return res.status(200).json({
+        status: 'success',
+        timestamp: new Date().toISOString(),
+        pagination: {
+          limit,
+          offset,
+          total: allDocuments.length,
+          returned: paginatedDocuments.length,
+          hasMore: offset + limit < allDocuments.length
+        },
+        cache: {
+          totalDocuments: allDocuments.length,
+          lastUpdated: cacheInfo.lastUpdated,
+          isExpired: cacheInfo.isExpired
+        },
+        documents: paginatedDocuments.map(doc => ({
+          id: doc.id,
+          fileName: doc.fileName,
+          fileSize: doc.fileSize,
+          contentType: doc.contentType,
+          signedUrl: doc.signedUrl || '',
+          hasSignedUrl: !!(doc.signedUrl && doc.signedUrl.length > 0),
+          createdAt: doc.createdAt,
+          updatedAt: doc.updatedAt,
+          storagePath: doc.storagePath,
+          alias: doc.alias || '',           // ✅ NUEVO CAMPO
+          description: doc.description || '', // ✅ NUEVO CAMPO
+          area: doc.area || ''              // ✅ NUEVO CAMPO
+        }))
+      })
+
+    } catch (error) {
+      console.error('❌ Error getting cached documents:', error)
+      
+      return res.status(500).json({
+        status: 'error',
+        timestamp: new Date().toISOString(),
+        error: 'cache_error',
+        message: error instanceof Error ? error.message : 'Failed to retrieve cached documents'
       })
     }
   }

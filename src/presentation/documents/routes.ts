@@ -46,6 +46,12 @@ export class DocumentsRoutes {
     // Health check route
     router.get('/health', controller.healthCheck)
 
+    // Document statistics route
+    router.get('/stats', controller.getDocumentStats)
+
+    // Document list route with pagination
+    router.get('/list', controller.getCachedDocuments)
+
     // Document upload route with multer middleware
     // Expects: multipart/form-data with 'file' field + optional metadata fields
     router.post('/upload', 

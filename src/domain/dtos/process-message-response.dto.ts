@@ -11,6 +11,7 @@ export class ProcessMessageResponseDto {
   constructor(
     public readonly response: string,
     public readonly timestamp: string,
-    public readonly sources: SourceDto[]
+    public readonly sources: SourceDto[],
+    public readonly resumeQuestion: string  // ✅ NUEVO CAMPO - Resumen de la pregunta (5 palabras o menos)
   ) {}
 }

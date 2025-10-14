@@ -54,6 +54,38 @@ export class OpenAIService {
   }
 
   /**
+   * Genera una respuesta simple usando el modelo de chat (para resúmenes, etc.)
+   */
+  async generateSimpleCompletion(prompt: string): Promise<string> {
+    try {
+      console.log(`🤖 OpenAIService.generateSimpleCompletion --> Generando respuesta simple...`)
+
+      const response = await this.client.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        temperature: 0.3,
+        max_tokens: 20,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ]
+      })
+
+      const content = response.choices[0]?.message?.content
+      
+      if (!content) {
+        throw new Error('No se pudo generar una respuesta')
+      }
+
+      return content.trim()
+    } catch (error) {
+      console.error('❌ Error al generar respuesta simple:', error)
+      throw new Error(`Error al generar respuesta simple: ${error}`)
+    }
+  }
+
+  /**
    * Genera una respuesta usando el modelo de chat con contexto
    */
   async generateChatCompletion(
