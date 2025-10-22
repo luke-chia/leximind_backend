@@ -1251,3 +1251,4 @@ Protección por rol: Solo usuarios con el rol expert pueden guardar opiniones.
 Asociación semántica: Las opiniones están vinculadas a mensajes específicos, lo que permite enriquecer futuras respuestas.
 
 Integración futura: Las opiniones podrán alimentar heurísticas, ranking o RAG semántico avanzado.
+# Railway deploy fix
