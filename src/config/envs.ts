@@ -1,6 +1,13 @@
 import 'dotenv/config'
 import env from 'env-var'
 
+
+console.log('🧪 Variables desde Railway:')
+console.log('MONGO_URL:', JSON.stringify(process.env.MONGO_URL))
+console.log('OPENAI_API_KEY:', JSON.stringify(process.env.OPENAI_API_KEY))
+console.log('PINECONE_API_KEY:', JSON.stringify(process.env.PINECONE_API_KEY))
+
+
 function validateEnvVar(name: string, defaultValue?: string) {
   const val = env.get(name).default(defaultValue ?? '').asString()
   if (!val) console.warn(`⚠️ La variable ${name} está vacía o no fue definida`)
