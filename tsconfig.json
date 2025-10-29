@@ -3,7 +3,7 @@
     "target": "ES2022",
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "rootDir": ".",
+    "rootDir": "./src",
     "outDir": "dist",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -20,5 +20,6 @@
     },
     "types": ["vitest/globals"]
   },
-  "include": ["src", "tests"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "tests"]
 }
