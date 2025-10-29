@@ -1,0 +1,88 @@
+{
+  "permissions": {
+    "defaultMode": "plan",
+
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./src/config/envs.ts)",
+      "Bash(cat .env*)",
+      "Bash(echo $OPENAI_API_KEY*)",
+      "Bash(echo $PINECONE_API_KEY*)",
+      "Bash(echo $SUPABASE_KEY*)",
+      "Bash(printenv | grep -i api)",
+      "Bash(printenv | grep -i key)",
+      "Bash(printenv | grep -i secret)",
+      "Bash(rm -rf *)",
+      "Bash(rm *)",
+      "Bash(git reset --hard*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(npm uninstall express*)",
+      "Bash(npm uninstall typescript*)",
+      "Bash(npm uninstall @supabase*)",
+      "Bash(npm uninstall openai*)",
+      "Bash(npm uninstall @pinecone*)"
+    ],
+
+    "ask": [
+      "Edit(./package.json)",
+      "Edit(./package-lock.json)",
+      "Edit(./tsconfig.json)",
+      "Edit(./.gitignore)",
+      "Edit(./CLAUDE.md)",
+      "Edit(./src/presentation/server.ts)",
+      "Edit(./src/app.ts)",
+      "Bash(npm install*)",
+      "Bash(npm uninstall*)",
+      "Bash(npm update*)",
+      "Bash(git push*)",
+      "Bash(git commit*)",
+      "Bash(git merge*)",
+      "Bash(git rebase*)",
+      "Bash(railway*)"
+    ],
+
+    "allow": [
+      "Read(./src/**)",
+      "Read(./documentation/**)",
+      "Read(./package.json)",
+      "Read(./tsconfig.json)",
+      "Read(./.gitignore)",
+      "Read(./CLAUDE.md)",
+      "Grep(./src/**)",
+      "Grep(./documentation/**)",
+      "Glob(**/*.ts)",
+      "Glob(**/*.js)",
+      "Glob(**/*.json)",
+      "Glob(**/*.md)",
+      "Bash(ls*)",
+      "Bash(pwd)",
+      "Bash(git status)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git branch*)",
+      "Bash(npm run dev)",
+      "Bash(npm run build)",
+      "Bash(npm start)",
+      "Bash(npm test)",
+      "Bash(tsc --noEmit)",
+      "Bash(node dist/**)",
+      "Bash(curl http://localhost*)",
+      "Bash(curl https://localhost*)"
+    ]
+  },
+
+  "hooks": {
+    "before:Edit": "if [[ '${file_path}' == *.ts ]]; then npx eslint '${file_path}' --quiet || true; fi",
+    "after:Edit": "if [[ '${file_path}' == *.ts ]]; then npx prettier --write '${file_path}' 2>/dev/null || true; fi"
+  },
+
+  "includeCoAuthoredBy": true,
+
+  "cleanupPeriodDays": 30,
+
+  "env": {
+    "NODE_ENV": "development"
+  }
+}

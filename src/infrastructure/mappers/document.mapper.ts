@@ -22,15 +22,15 @@ export class DocumentMapper {
    * Consulta el CacheService para obtener las URLs firmadas
    */
   static toSources(documents: Document[]): Source[] {
-    return documents.map(doc => {
+    return documents.map((doc) => {
       const documentId = doc.metadata?.documentId || doc.id
-      
+
       // Consultar el documento en el cache
       const cachedDoc = CacheService.getDocumentById(documentId)
-      
+
       // Obtener signedUrl del documento cacheado (fallback a vacío)
       const signedUrl = cachedDoc?.signedUrl || ''
-      
+
       return this.toSource(doc, signedUrl)
     })
   }

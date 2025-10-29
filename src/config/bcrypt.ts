@@ -1,15 +1,13 @@
-import { compareSync, hashSync } from "bcryptjs";
+import { compareSync, hashSync } from 'bcryptjs'
 
 export class BcryptAdapter {
+  static hash(password: string): string {
+    console.info('password encriptado')
+    return hashSync(password)
+  }
 
-    static hash(password: string): string {
-        console.log("password encriptado");
-        return hashSync(password);
-    }
-
-    static compare(password: string, hash: string): boolean {
-        console.log(password, hash);
-        return compareSync(password, hash);
-    }
-
+  static compare(password: string, hash: string): boolean {
+    console.info(password, hash)
+    return compareSync(password, hash)
+  }
 }

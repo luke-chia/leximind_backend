@@ -16,15 +16,21 @@ export class CacheService {
   static setDocuments(documents: ExternalDocument[]): void {
     this.documents = documents
     this.lastUpdated = new Date()
-    
+
     // Contar documentos con URLs firmadas válidas
-    const documentsWithUrls = documents.filter(doc => doc.signedUrl && doc.signedUrl.length > 0)
-    
+    const documentsWithUrls = documents.filter(
+      (doc) => doc.signedUrl && doc.signedUrl.length > 0
+    )
+
     console.log(`📦 Cache updated with ${documents.length} documents`)
-    console.log(`🔗 ${documentsWithUrls.length} documents have valid signed URLs`)
-    
+    console.log(
+      `🔗 ${documentsWithUrls.length} documents have valid signed URLs`
+    )
+
     if (documentsWithUrls.length !== documents.length) {
-      console.log(`⚠️ ${documents.length - documentsWithUrls.length} documents have no signed URL`)
+      console.log(
+        `⚠️ ${documents.length - documentsWithUrls.length} documents have no signed URL`
+      )
     }
   }
 
@@ -39,7 +45,7 @@ export class CacheService {
    * Obtiene un documento específico por ID del caché
    */
   static getDocumentById(id: string): ExternalDocument | null {
-    return this.documents.find(doc => doc.id === id) || null
+    return this.documents.find((doc) => doc.id === id) || null
   }
 
   /**
@@ -47,7 +53,7 @@ export class CacheService {
    */
   static searchDocumentsByName(query: string): ExternalDocument[] {
     const normalizedQuery = query.toLowerCase()
-    return this.documents.filter(doc => 
+    return this.documents.filter((doc) =>
       doc.fileName?.toLowerCase().includes(normalizedQuery)
     )
   }
@@ -59,7 +65,7 @@ export class CacheService {
     if (!this.lastUpdated) {
       return true
     }
-    
+
     const now = new Date()
     const timeDiff = now.getTime() - this.lastUpdated.getTime()
     return timeDiff > this.CACHE_DURATION_MS
@@ -76,7 +82,7 @@ export class CacheService {
     return {
       documentCount: this.documents.length,
       lastUpdated: this.lastUpdated,
-      isExpired: this.isCacheExpired()
+      isExpired: this.isCacheExpired(),
     }
   }
 
@@ -93,8 +99,10 @@ export class CacheService {
    * Agrega un documento al caché
    */
   static addDocument(document: ExternalDocument): void {
-    const existingIndex = this.documents.findIndex(doc => doc.id === document.id)
-    
+    const existingIndex = this.documents.findIndex(
+      (doc) => doc.id === document.id
+    )
+
     if (existingIndex >= 0) {
       // Actualizar documento existente
       this.documents[existingIndex] = document
@@ -111,13 +119,13 @@ export class CacheService {
    */
   static removeDocument(id: string): boolean {
     const initialLength = this.documents.length
-    this.documents = this.documents.filter(doc => doc.id !== id)
-    
+    this.documents = this.documents.filter((doc) => doc.id !== id)
+
     const wasRemoved = this.documents.length < initialLength
     if (wasRemoved) {
       console.log(`➖ Document removed from cache: ${id}`)
     }
-    
+
     return wasRemoved
   }
 
@@ -133,12 +141,21 @@ export class CacheService {
     documentsWithSignedUrls: number
     documentsWithoutSignedUrls: number
   } {
-    const totalSize = this.documents.reduce((sum, doc) => sum + (doc.fileSize || 0), 0)
-    const averageSize = this.documents.length > 0 ? totalSize / this.documents.length : 0
-    const cacheAge = this.lastUpdated ? Date.now() - this.lastUpdated.getTime() : 0
-    
-    const documentsWithSignedUrls = this.documents.filter(doc => doc.signedUrl && doc.signedUrl.length > 0).length
-    const documentsWithoutSignedUrls = this.documents.length - documentsWithSignedUrls
+    const totalSize = this.documents.reduce(
+      (sum, doc) => sum + (doc.fileSize || 0),
+      0
+    )
+    const averageSize =
+      this.documents.length > 0 ? totalSize / this.documents.length : 0
+    const cacheAge = this.lastUpdated
+      ? Date.now() - this.lastUpdated.getTime()
+      : 0
+
+    const documentsWithSignedUrls = this.documents.filter(
+      (doc) => doc.signedUrl && doc.signedUrl.length > 0
+    ).length
+    const documentsWithoutSignedUrls =
+      this.documents.length - documentsWithSignedUrls
 
     return {
       totalDocuments: this.documents.length,
@@ -147,21 +164,25 @@ export class CacheService {
       lastUpdated: this.lastUpdated,
       cacheAge,
       documentsWithSignedUrls,
-      documentsWithoutSignedUrls
+      documentsWithoutSignedUrls,
     }
   }
-  
+
   /**
    * Obtiene documentos que tienen URLs firmadas válidas
    */
   static getDocumentsWithSignedUrls(): ExternalDocument[] {
-    return this.documents.filter(doc => doc.signedUrl && doc.signedUrl.length > 0)
+    return this.documents.filter(
+      (doc) => doc.signedUrl && doc.signedUrl.length > 0
+    )
   }
-  
+
   /**
    * Obtiene documentos que no tienen URLs firmadas
    */
   static getDocumentsWithoutSignedUrls(): ExternalDocument[] {
-    return this.documents.filter(doc => !doc.signedUrl || doc.signedUrl.length === 0)
+    return this.documents.filter(
+      (doc) => !doc.signedUrl || doc.signedUrl.length === 0
+    )
   }
 }

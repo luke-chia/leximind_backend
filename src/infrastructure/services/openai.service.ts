@@ -15,10 +15,16 @@ export class OpenAIService {
    */
   async generateEmbedding(text: string): Promise<number[]> {
     try {
-      console.log(`🤖 DIAGNÓSTICO - Generando embedding para texto de ${text.length} caracteres...`)
-      console.log(`📝 DIAGNÓSTICO - Texto a procesar: "${text.substring(0, 200)}${text.length > 200 ? '...' : ''}"`)
-      console.log(`🔧 DIAGNÓSTICO - Modelo usado: ${envs.OPENAI_EMBEDDING_MODEL}`)
-      
+      console.log(
+        `🤖 DIAGNÓSTICO - Generando embedding para texto de ${text.length} caracteres...`
+      )
+      console.log(
+        `📝 DIAGNÓSTICO - Texto a procesar: "${text.substring(0, 200)}${text.length > 200 ? '...' : ''}"`
+      )
+      console.log(
+        `🔧 DIAGNÓSTICO - Modelo usado: ${envs.OPENAI_EMBEDDING_MODEL}`
+      )
+
       const startTime = Date.now()
       const response = await this.client.embeddings.create({
         model: envs.OPENAI_EMBEDDING_MODEL,
@@ -39,8 +45,15 @@ export class OpenAIService {
       const embedding = response.data[0].embedding
       console.log(`✅ DIAGNÓSTICO - Embedding generado:`)
       console.log(`   - Dimensión: ${embedding.length}`)
-      console.log(`   - Primeros 5 valores: [${embedding.slice(0, 5).map(v => v.toFixed(6)).join(', ')}...]`)
-      console.log(`   - Rango de valores: ${Math.min(...embedding).toFixed(6)} a ${Math.max(...embedding).toFixed(6)}`)
+      console.log(
+        `   - Primeros 5 valores: [${embedding
+          .slice(0, 5)
+          .map((v) => v.toFixed(6))
+          .join(', ')}...]`
+      )
+      console.log(
+        `   - Rango de valores: ${Math.min(...embedding).toFixed(6)} a ${Math.max(...embedding).toFixed(6)}`
+      )
 
       return embedding
     } catch (error) {
@@ -58,7 +71,9 @@ export class OpenAIService {
    */
   async generateSimpleCompletion(prompt: string): Promise<string> {
     try {
-      console.log(`🤖 OpenAIService.generateSimpleCompletion --> Generando respuesta simple...`)
+      console.log(
+        `🤖 OpenAIService.generateSimpleCompletion --> Generando respuesta simple...`
+      )
 
       const response = await this.client.chat.completions.create({
         model: 'gpt-3.5-turbo',
@@ -67,13 +82,13 @@ export class OpenAIService {
         messages: [
           {
             role: 'user',
-            content: prompt
-          }
-        ]
+            content: prompt,
+          },
+        ],
       })
 
       const content = response.choices[0]?.message?.content
-      
+
       if (!content) {
         throw new Error('No se pudo generar una respuesta')
       }
@@ -94,7 +109,9 @@ export class OpenAIService {
     systemPrompt?: string
   ): Promise<string> {
     try {
-      console.log(`🧠 OpenAIService.generateChatCompletion --> Generando respuesta con IA para pregunta de ${userQuestion.length} caracteres...`)
+      console.log(
+        `🧠 OpenAIService.generateChatCompletion --> Generando respuesta con IA para pregunta de ${userQuestion.length} caracteres...`
+      )
 
       const response = await this.client.chat.completions.create({
         model: envs.OPENAI_MODEL,
@@ -102,21 +119,21 @@ export class OpenAIService {
         messages: [
           {
             role: 'system',
-            content: systemPrompt || this.getDefaultSystemPrompt()
+            content: systemPrompt || this.getDefaultSystemPrompt(),
           },
           {
             role: 'system',
-            content: `CONTEXT:\n${context}`
+            content: `CONTEXT:\n${context}`,
           },
           {
             role: 'user',
-            content: userQuestion
-          }
-        ]
+            content: userQuestion,
+          },
+        ],
       })
 
       const content = response.choices[0]?.message?.content
-      
+
       if (!content) {
         throw new Error('No se pudo generar una respuesta')
       }
@@ -156,5 +173,4 @@ INSTRUCCIONES:
 - Mantén un tono profesional y útil
     `.trim()
   }
-  
 }

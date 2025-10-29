@@ -52,7 +52,7 @@ export class ChatsController {
       // Esperar ambas operaciones en paralelo
       const [response, resumeQuestion] = await Promise.all([
         responsePromise,
-        resumeQuestionPromise
+        resumeQuestionPromise,
       ])
 
       // Log de fuentes encontradas
@@ -60,8 +60,12 @@ export class ChatsController {
         console.log(`📚 Fuentes encontradas (${response.sources.length}):`)
         response.sources.forEach((source, index) => {
           const hasSignedUrl = source.signedUrl && source.signedUrl.length > 0
-          const urlInfo = hasSignedUrl ? `URL: ${source.signedUrl!.substring(0, 50)}...` : 'URL: No disponible'
-          console.log(`   ${index + 1}. ${source.source} | Pág. ${source.page} | Score: ${source.score} | ${urlInfo}`)
+          const urlInfo = hasSignedUrl
+            ? `URL: ${source.signedUrl!.substring(0, 50)}...`
+            : 'URL: No disponible'
+          console.log(
+            `   ${index + 1}. ${source.source} | Pág. ${source.page} | Score: ${source.score} | ${urlInfo}`
+          )
         })
       } else {
         console.log('📚 No se encontraron fuentes para esta consulta')
@@ -70,7 +74,7 @@ export class ChatsController {
       // ✅ NUEVO: Agregar resumeQuestion a la respuesta
       const enhancedResponse = {
         ...response,
-        resumeQuestion
+        resumeQuestion,
       }
 
       console.log(`🔤 Resumen de pregunta agregado: "${resumeQuestion}"`)
@@ -109,29 +113,29 @@ export class ChatsController {
   healthCheck = async (req: Request, res: Response) => {
     try {
       console.log('🔍 Verificando salud del sistema RAG...')
-      
+
       const openAIService = new OpenAIService()
       const pineconeService = new PineconeService()
       const ragAdapter = new RAGAdapter(openAIService, pineconeService)
-      
+
       const healthStatus = await ragAdapter.healthCheck()
-      
+
       const status = healthStatus.overall ? 200 : 503
-      
+
       return res.status(status).json({
         status: healthStatus.overall ? 'healthy' : 'unhealthy',
         timestamp: new Date().toISOString(),
         services: {
           openai: {
             status: healthStatus.openai ? 'up' : 'down',
-            description: 'OpenAI API for embeddings and chat completion'
+            description: 'OpenAI API for embeddings and chat completion',
           },
           pinecone: {
             status: healthStatus.pinecone ? 'up' : 'down',
-            description: 'Pinecone vector database for similarity search'
-          }
+            description: 'Pinecone vector database for similarity search',
+          },
         },
-        overall: healthStatus.overall
+        overall: healthStatus.overall,
       })
     } catch (error) {
       console.error('❌ Error en health check:', error)
@@ -139,7 +143,7 @@ export class ChatsController {
         status: 'error',
         timestamp: new Date().toISOString(),
         error: 'Health check failed',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error',
       })
     }
   }
@@ -147,17 +151,19 @@ export class ChatsController {
   diagnosticsPinecone = async (req: Request, res: Response) => {
     try {
       console.log('🔍 Iniciando diagnóstico completo de Pinecone...')
-      
+
       const pineconeService = new PineconeService()
-      
+
       // Ejecutar diagnóstico completo
       await pineconeService.runDiagnostics()
-      
+
       return res.status(200).json({
         status: 'completed',
-        message: 'Diagnóstico completo ejecutado. Revisa los logs del servidor para detalles.',
+        message:
+          'Diagnóstico completo ejecutado. Revisa los logs del servidor para detalles.',
         timestamp: new Date().toISOString(),
-        instruction: 'Verifica la consola del servidor para obtener información detallada del diagnóstico.'
+        instruction:
+          'Verifica la consola del servidor para obtener información detallada del diagnóstico.',
       })
     } catch (error) {
       console.error('❌ Error en diagnóstico:', error)
@@ -165,7 +171,7 @@ export class ChatsController {
         status: 'error',
         timestamp: new Date().toISOString(),
         error: 'Diagnostics failed',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error',
       })
     }
   }

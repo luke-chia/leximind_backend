@@ -7,7 +7,13 @@ import fs from 'fs'
 import path from 'path'
 
 // Configure pdfjs-dist worker for Node environment (prevents worker resolution issues)
-pdfjsLib.GlobalWorkerOptions.workerSrc = path.join(process.cwd(), 'node_modules', 'pdfjs-dist', 'build', 'pdf.worker.min.js')
+pdfjsLib.GlobalWorkerOptions.workerSrc = path.join(
+  process.cwd(),
+  'node_modules',
+  'pdfjs-dist',
+  'build',
+  'pdf.worker.min.js'
+)
 
 export interface UploadMetadata {
   userId?: string
@@ -32,7 +38,7 @@ export interface UploadOptions {
 
 /**
  * UploadAdapter
- * 
+ *
  * Responsibilities:
  * - Orchestrate the PDF upload and processing flow
  * - Extract text from PDF documents
@@ -50,8 +56,8 @@ export class UploadAdapter {
    * Process uploaded PDF file and store in vector database
    */
   async processUploadedDocument(
-    buffer: Buffer, 
-    filename: string, 
+    buffer: Buffer,
+    filename: string,
     metadata: UploadMetadata = {},
     options: UploadOptions
   ): Promise<UploadResult> {
@@ -59,7 +65,9 @@ export class UploadAdapter {
     const documentId = options.documentId
 
     try {
-      console.log(`📄 Processing PDF upload: ${filename} (${buffer.length} bytes)`)
+      console.log(
+        `📄 Processing PDF upload: ${filename} (${buffer.length} bytes)`
+      )
       console.log(`🔑 Document ID: ${documentId}`)
       console.log(`📋 Metadata:`, metadata)
       console.log(`💾 savepdf: ${options.savepdf === true ? 'true' : 'false'}`)
@@ -78,20 +86,31 @@ export class UploadAdapter {
         throw new Error('No text content found in PDF')
       }
 
-      console.log(`📖 Extracted ${text.length} characters from ${pages.length} pages`)
+      console.log(
+        `📖 Extracted ${text.length} characters from ${pages.length} pages`
+      )
 
       // Step 2: Process document per page (chunk and generate embeddings with page metadata)
-      console.log(`2️⃣ Processing document for embeddings (per-page chunking)...`)
-      const vectors: { id: string, values: number[], metadata: Record<string, any> }[] = []
+      console.log(
+        `2️⃣ Processing document for embeddings (per-page chunking)...`
+      )
+      const vectors: {
+        id: string
+        values: number[]
+        metadata: Record<string, any>
+      }[] = []
       let globalChunkIndex = 0
-      for (const page of pages as Array<{ pageNumber: number, text: string }>) {
+      for (const page of pages as Array<{ pageNumber: number; text: string }>) {
         if (!page.text || page.text.trim().length === 0) continue
-        const { chunks, embeddings } = await this.embeddingsService.processDocument(page.text, {
-          maxChunkSize: 1000,
-          overlapSize: 100
-        })
+        const { chunks, embeddings } =
+          await this.embeddingsService.processDocument(page.text, {
+            maxChunkSize: 1000,
+            overlapSize: 100,
+          })
         if (chunks.length !== embeddings.length) {
-          throw new Error(`Mismatch between chunks (${chunks.length}) and embeddings (${embeddings.length}) on page ${page.pageNumber}`)
+          throw new Error(
+            `Mismatch between chunks (${chunks.length}) and embeddings (${embeddings.length}) on page ${page.pageNumber}`
+          )
         }
         for (let i = 0; i < chunks.length; i++) {
           const chunk = chunks[i]
@@ -109,12 +128,34 @@ export class UploadAdapter {
               text: this.sanitizeTextForVectorDB(chunk),
               uploadDate: new Date().toISOString(),
               // Include user metadata
-              ...(metadata.userId && { userId: this.sanitizeTextForVectorDB(metadata.userId) }),
-              ...(metadata.area && metadata.area.length > 0 && { area: metadata.area.map(a => this.sanitizeTextForVectorDB(a)) }),
-              ...(metadata.category && metadata.category.length > 0 && { category: metadata.category.map(c => this.sanitizeTextForVectorDB(c)) }),
-              ...(metadata.source && metadata.source.length > 0 && { source: metadata.source.map(s => this.sanitizeTextForVectorDB(s)) }),
-              ...(metadata.tags && metadata.tags.length > 0 && { tags: metadata.tags.map(t => this.sanitizeTextForVectorDB(t)) }),
-            }
+              ...(metadata.userId && {
+                userId: this.sanitizeTextForVectorDB(metadata.userId),
+              }),
+              ...(metadata.area &&
+                metadata.area.length > 0 && {
+                  area: metadata.area.map((a) =>
+                    this.sanitizeTextForVectorDB(a)
+                  ),
+                }),
+              ...(metadata.category &&
+                metadata.category.length > 0 && {
+                  category: metadata.category.map((c) =>
+                    this.sanitizeTextForVectorDB(c)
+                  ),
+                }),
+              ...(metadata.source &&
+                metadata.source.length > 0 && {
+                  source: metadata.source.map((s) =>
+                    this.sanitizeTextForVectorDB(s)
+                  ),
+                }),
+              ...(metadata.tags &&
+                metadata.tags.length > 0 && {
+                  tags: metadata.tags.map((t) =>
+                    this.sanitizeTextForVectorDB(t)
+                  ),
+                }),
+            },
           })
           globalChunkIndex++
         }
@@ -122,7 +163,9 @@ export class UploadAdapter {
 
       // Update totalChunks in metadata for all vectors
       const totalChunks = vectors.length
-      vectors.forEach(v => { v.metadata.totalChunks = totalChunks })
+      vectors.forEach((v) => {
+        v.metadata.totalChunks = totalChunks
+      })
 
       // Step 4: Store in Pinecone
       console.log(`4️⃣ Storing vectors in Pinecone...`)
@@ -136,9 +179,8 @@ export class UploadAdapter {
         chunksProcessed: vectors.length,
         filename,
         totalPages: pages.length,
-        processingTime
+        processingTime,
       }
-
     } catch (error) {
       const processingTime = Date.now() - startTime
       console.error(`❌ Error processing document ${filename}:`, error)
@@ -155,11 +197,11 @@ export class UploadAdapter {
     if (!input) return ''
     // Iterate by code points to avoid splitting surrogate pairs
     const filtered = Array.from(input)
-      .map(ch => {
+      .map((ch) => {
         const cp = ch.codePointAt(0) as number
         // Remove surrogate range and non-characters U+FFFE/U+FFFF and their planes
-        const isSurrogate = cp >= 0xD800 && cp <= 0xDFFF
-        const isNonChar = (cp & 0xFFFF) === 0xFFFE || (cp & 0xFFFF) === 0xFFFF
+        const isSurrogate = cp >= 0xd800 && cp <= 0xdfff
+        const isNonChar = (cp & 0xffff) === 0xfffe || (cp & 0xffff) === 0xffff
         if (isSurrogate || isNonChar) return ''
         return ch
       })
@@ -172,9 +214,13 @@ export class UploadAdapter {
   /**
    * Extract text content from PDF buffer
    */
-  private async extractTextFromPDF(buffer: Buffer): Promise<{ text: string, pages: any[] }> {
+  private async extractTextFromPDF(
+    buffer: Buffer
+  ): Promise<{ text: string; pages: any[] }> {
     try {
-      console.log(`📖 Parsing PDF buffer (${buffer.length} bytes) with pdfjs-dist...`)
+      console.log(
+        `📖 Parsing PDF buffer (${buffer.length} bytes) with pdfjs-dist...`
+      )
 
       // Validar que el buffer no esté vacío
       if (!buffer || buffer.length === 0) {
@@ -188,7 +234,11 @@ export class UploadAdapter {
       }
 
       // Cargar documento con pdfjs-dist (requires Uint8Array, not Buffer)
-      const data = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
+      const data = new Uint8Array(
+        buffer.buffer,
+        buffer.byteOffset,
+        buffer.byteLength
+      )
       const loadingTask = pdfjsLib.getDocument({ data })
       const pdf = await loadingTask.promise
       const numPages = pdf.numPages || 0
@@ -204,7 +254,7 @@ export class UploadAdapter {
         const page = await pdf.getPage(p)
         const textContent = await page.getTextContent()
         const pageText = textContent.items
-          .map(i => (i as PdfJsTextItem).str ?? '')
+          .map((i) => (i as PdfJsTextItem).str ?? '')
           .join(' ')
           .replace(/\s+/g, ' ')
           .trim()
@@ -224,7 +274,6 @@ export class UploadAdapter {
       console.log(`   - Pages: ${numPages}`)
 
       return { text: fullText, pages }
-
     } catch (error) {
       console.error('❌ Error extracting text from PDF (pdfjs-dist):', error)
       const message = error instanceof Error ? error.message : 'Unknown error'
@@ -235,14 +284,21 @@ export class UploadAdapter {
   /**
    * Save original PDF to documentation/uploads creating the folder if needed
    */
-  private async savePdfToDisk(buffer: Buffer, originalName: string, documentId: string): Promise<string> {
+  private async savePdfToDisk(
+    buffer: Buffer,
+    originalName: string,
+    documentId: string
+  ): Promise<string> {
     const uploadsDir = path.resolve(process.cwd(), 'documentation', 'uploads')
     try {
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true })
       }
       const safeName = originalName.replace(/[^a-zA-Z0-9._-]/g, '_')
-      const filePath = path.join(uploadsDir, `${documentId}__${Date.now()}__${safeName}`)
+      const filePath = path.join(
+        uploadsDir,
+        `${documentId}__${Date.now()}__${safeName}`
+      )
       fs.writeFileSync(filePath, buffer)
       return filePath
     } catch (err) {
@@ -262,27 +318,40 @@ export class UploadAdapter {
 
     // Check file type
     if (file.mimetype !== 'application/pdf') {
-      throw new Error(`Invalid file type: ${file.mimetype}. Only PDF files are allowed.`)
+      throw new Error(
+        `Invalid file type: ${file.mimetype}. Only PDF files are allowed.`
+      )
     }
 
     // Check file size (10MB limit)
     const maxSizeBytes = 10 * 1024 * 1024 // 10MB
     if (file.size > maxSizeBytes) {
-      throw new Error(`File too large: ${(file.size / 1024 / 1024).toFixed(2)}MB. Maximum allowed: 10MB`)
+      throw new Error(
+        `File too large: ${(file.size / 1024 / 1024).toFixed(2)}MB. Maximum allowed: 10MB`
+      )
     }
 
     // Check filename
-    if (!file.originalname || !file.originalname.toLowerCase().endsWith('.pdf')) {
+    if (
+      !file.originalname ||
+      !file.originalname.toLowerCase().endsWith('.pdf')
+    ) {
       throw new Error('Invalid filename. File must have .pdf extension')
     }
 
-    console.log(`✅ File validation passed: ${file.originalname} (${(file.size / 1024).toFixed(2)}KB)`)
+    console.log(
+      `✅ File validation passed: ${file.originalname} (${(file.size / 1024).toFixed(2)}KB)`
+    )
   }
 
   /**
    * Health check for all dependencies
    */
-  async healthCheck(): Promise<{ embeddings: boolean, pinecone: boolean, overall: boolean }> {
+  async healthCheck(): Promise<{
+    embeddings: boolean
+    pinecone: boolean
+    overall: boolean
+  }> {
     console.log('🔍 Running upload adapter health check...')
 
     const embeddingsStatus = await this.embeddingsService.ping()
@@ -297,7 +366,7 @@ export class UploadAdapter {
     return {
       embeddings: embeddingsStatus,
       pinecone: pineconeStatus,
-      overall
+      overall,
     }
   }
 }

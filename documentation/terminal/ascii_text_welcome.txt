@@ -1,0 +1,240 @@
+╭─── Claude Code v2.0.27 ──────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                               │ Tips for getting started                                                     │
+│               Welcome back Luke!              │ Run /init to create a CLAUDE.md file with instructions for Claude            │
+│                                               │ Run /install-github-app to tag @claude right from your Github issues and PRs │
+│                    ▐▛███▜▌                    │ ──────────────────────────────────────────────────────────────────────────── │
+│                   ▝▜█████▛▘                   │ Recent activity                                                              │
+│                     ▘▘ ▝▝                     │ No recent activity                                                           │
+│                                               │                                                                              │
+│            Sonnet 4.5 · Claude Pro            │                                                                              │
+│   /…/Documents/Personal/IA/leximind_backend   │                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+GitHub
+Run /install-github-app to tag @claude right from your Github issues and PRs
+
+
+LINTING
+
+Uso:
+  # Ver todos los errores
+  npm run lint
+
+  # Auto-fix problemas simples (imports, spacing, etc.)
+  npm run lint:fix
+
+  # Generar reporte de errores
+  npm run lint:report
+
+  ---
+  🧪 Paso 5: Probar ESLint
+
+  Test Manual:
+
+  # Lint de todo el proyecto
+  npm run lint
+
+  # Lint de un archivo específico
+  npx eslint src/presentation/chats/controller.ts
+
+  # Auto-fix
+  npx eslint src/presentation/chats/controller.ts --fix
+
+  Probar con el Hook de Claude:
+
+  1. Pide un cambio:
+  Tú: "Agrega un console.log en rag.adapter.ts"
+  2. Observa el hook:
+  [Hook before:Edit] Running: npx eslint src/infrastructure/adapters/rag.adapter.ts --quiet
+  ⚠️  Warning: Unexpected console statement
+  3. Claude te alertará:
+  Yo: "Detecté un warning de ESLint: console.log no es recomendado en producción.
+       ¿Quieres que use console.info en su lugar?"
+
+  ---
+  📊 Integración con CI/CD (Opcional)
+
+  GitHub Actions (Futuro)
+
+  # .github/workflows/lint.yml
+  name: Lint
+  on: [push, pull_request]
+  jobs:
+    lint:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v3
+        - uses: actions/setup-node@v3
+        - run: npm ci
+        - run: npm run lint
+
+  Pre-commit Hook (Git)
+
+  # Instalar husky
+  npm install --save-dev husky
+
+  # Configurar pre-commit
+  npx husky install
+  npx husky add .husky/pre-commit "npm run lint"
+
+  Resultado: No puedes commitear si hay errores de lint.
+
+  ---
+  🎯 Reglas Personalizadas para LexiMind
+
+  Estas son reglas adicionales que puedes agregar específicamente para tu proyecto:
+
+  Bloquear uso directo de process.env
+
+  {
+    "rules": {
+      "no-process-env": "error"  // Fuerza usar src/config/envs.ts
+    }
+  }
+
+  Ejemplo:
+  // ❌ Error
+  const apiKey = process.env.OPENAI_API_KEY
+
+  // ✅ Correcto
+  import { envs } from '../config/envs'
+  const apiKey = envs.OPENAI_API_KEY
+
+  ---
+  Prohibir imports absolutos sin alias
+
+  {
+    "rules": {
+      "no-restricted-imports": ["error", {
+        "patterns": ["../../*"]  // Evita ../../../hell
+      }]
+    }
+  }
+
+  Solución: Configurar path aliases en tsconfig.json:
+  {
+    "compilerOptions": {
+      "paths": {
+        "@domain/*": ["./src/domain/*"],
+        "@infrastructure/*": ["./src/infrastructure/*"],
+        "@presentation/*": ["./src/presentation/*"]
+      }
+    }
+  }
+
+  ---
+  📈 Qué Esperar al Correr ESLint por Primera Vez
+
+  Probablemente verás:
+  ✖ 147 problems (42 errors, 105 warnings)
+    23 errors and 87 warnings potentially fixable with the `--fix` option.
+
+  No te asustes. Es normal en proyectos existentes. Prioriza:
+
+  1. Errores críticos primero:
+    - Promises sin await
+    - Variables sin usar que causan bugs
+    - Comparaciones con == en lugar de ===
+  2. Warnings después:
+    - console.log → console.info
+    - Imports desordenados (auto-fix con --fix)
+    - Variables con any
+  3. Opcionales:
+    - Estilo de código (si tienes tiempo)
+
+  ---
+  🛠️ Comando de Instalación Completo
+
+  Copia y pega esto para instalar todo de una vez:
+
+  # Instalar dependencias
+  npm install --save-dev eslint \
+    @typescript-eslint/parser \
+    @typescript-eslint/eslint-plugin \
+    eslint-plugin-import \
+    eslint-plugin-node
+
+  # Crear .eslintrc.json
+  cat > .eslintrc.json << 'EOF'
+  {
+    "root": true,
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+      "ecmaVersion": 2022,
+      "sourceType": "module",
+      "project": "./tsconfig.json"
+    },
+    "plugins": ["@typescript-eslint", "import", "node"],
+    "extends": [
+      "eslint:recommended",
+      "plugin:@typescript-eslint/recommended",
+      "plugin:import/recommended",
+      "plugin:import/typescript"
+    ],
+    "env": {
+      "node": true,
+      "es2022": true
+    },
+    "rules": {
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": ["warn", {"argsIgnorePattern": "^_"}],
+      "@typescript-eslint/no-floating-promises": "error",
+      "no-console": ["warn", {"allow": ["warn", "error", "info"]}],
+      "eqeqeq": ["error", "always"]
+    },
+    "ignorePatterns": ["node_modules/", "dist/", "*.js"]
+  }
+  EOF
+
+  # Crear .eslintignore
+  cat > .eslintignore << 'EOF'
+  node_modules/
+  dist/
+  *.js
+  .claude/
+  documentation/
+  EOF
+
+  # Test
+  npx eslint src/**/*.ts
+
+  ---
+  ✅ Resumen Visual
+
+  Sin ESLint:
+
+  [Escribes código] → [TypeScript compila] → [Deploy] → [Bug en producción] 💥
+
+  Con ESLint:
+
+  [Escribes código] → [ESLint valida] → [TypeScript compila] → [Deploy] ✅
+                             ↓
+                      [Detecta bugs]
+                      [Auto-fix estilo]
+                      [Enforza buenas prácticas]
+
+  Con ESLint + Hook de Claude:
+
+  [Claude va a editar] → [Hook ESLint pre-edit] → [Detecta problemas existentes]
+                                  ↓
+                          [Claude te alerta antes de editar]
+                          [Propone fix]
+                                  ↓
+                          [Edit ejecutado] → [Hook Prettier post-edit] → [Código limpio] ✨
+
+  ---
+  🎓 Próximos Pasos
+
+  1. Decide ahora:
+    - ¿Quieres que instale ESLint ahora mismo? (5 minutos)
+    - ¿O prefieres hacerlo manualmente después?
+  2. Si instalas ahora:
+    - Te mostraré los errores encontrados
+    - Priorizaremos los críticos
+    - Corregiremos los auto-fixables
+  3. Beneficio inmediato:
+    - El hook before:Edit empezará a funcionar
+    - Cada vez que edite código, ESLint validará primero
+    - Código más limpio y con menos bugs
+
+  ---

@@ -9,11 +9,11 @@ export interface ExternalDocument {
   contentType?: string
   createdAt?: string
   updatedAt?: string
-  storagePath?: string           // Path del archivo en Supabase Storage
-  signedUrlExpiresAt?: string    // Fecha de expiración de la URL firmada
-  alias?: string                 // Alias del documento (campo directo)
-  description?: string           // Descripción del documento (campo directo)
-  area?: string                  // Nombre del área (relación - solo primera)
+  storagePath?: string // Path del archivo en Supabase Storage
+  signedUrlExpiresAt?: string // Fecha de expiración de la URL firmada
+  alias?: string // Alias del documento (campo directo)
+  description?: string // Descripción del documento (campo directo)
+  area?: string // Nombre del área (relación - solo primera)
 }
 
 export class SupabaseService {
@@ -29,8 +29,10 @@ export class SupabaseService {
    */
   async getAllDocuments(): Promise<ExternalDocument[]> {
     try {
-      console.log('📄 Fetching documents from Supabase with signed URL management...')
-      
+      console.log(
+        '📄 Fetching documents from Supabase with signed URL management...'
+      )
+
       // Primero obtener solo los IDs de todos los documentos
       const { data: documentIds, error } = await this.client
         .from('documents')
@@ -43,7 +45,7 @@ export class SupabaseService {
       }
 
       const documents: ExternalDocument[] = []
-      
+
       // Procesar cada documento usando getDocumentById para reutilizar lógica
       for (const docId of documentIds || []) {
         try {
@@ -56,10 +58,11 @@ export class SupabaseService {
           // Continuar con otros documentos
         }
       }
-      
-      console.log(`✅ SupabaseService.getAllDocuments --> Retrieved ${documents.length} documents from Supabase`)
+
+      console.log(
+        `✅ SupabaseService.getAllDocuments --> Retrieved ${documents.length} documents from Supabase`
+      )
       return documents
-      
     } catch (error) {
       console.error('❌ Error fetching documents from Supabase:', error)
       console.log('📦 Returning empty documents array due to error')
@@ -74,11 +77,12 @@ export class SupabaseService {
   async getDocumentById(id: string): Promise<ExternalDocument | null> {
     try {
       console.log(`📄 Fetching document with ID: ${id}`)
-      
+
       // Query simplificada - obtener documento base primero
       const { data: docData, error: docError } = await this.client
         .from('documents')
-        .select(`
+        .select(
+          `
           id, 
           storage_path, 
           signed_url, 
@@ -90,7 +94,8 @@ export class SupabaseService {
           updated_at,
           alias,
           description
-        `)
+        `
+        )
         .eq('id', id)
         .single()
 
@@ -105,9 +110,11 @@ export class SupabaseService {
       // Obtener la primera área por separado (menor area_id)
       const { data: areaData, error: areaError } = await this.client
         .from('document_areas')
-        .select(`
+        .select(
+          `
           areas!inner(name)
-        `)
+        `
+        )
         .eq('document_id', id)
         .order('area_id', { ascending: true })
         .limit(1)
@@ -116,14 +123,13 @@ export class SupabaseService {
       // Combinar datos del documento con área (si existe)
       const combinedDoc = {
         ...docData,
-        document_areas: areaData ? [areaData] : []
+        document_areas: areaData ? [areaData] : [],
       }
 
       // Procesar el documento con la nueva estructura
       const processedDoc = await this.ensureValidSignedUrl(combinedDoc)
       console.log(`✅ Document found: ${processedDoc.fileName || 'unnamed'}`)
       return processedDoc
-      
     } catch (error) {
       console.error(`❌ Error fetching document ${id}:`, error)
       return null
@@ -134,7 +140,11 @@ export class SupabaseService {
    * Obtiene la URL firmada de un archivo desde Storage
    * Por defecto son 7 días la vida de la URL
    */
-  async getSignedUrl(bucket: string, path: string, expiresIn: number = 604800): Promise<string> {
+  async getSignedUrl(
+    bucket: string,
+    path: string,
+    expiresIn: number = 604800
+  ): Promise<string> {
     try {
       const { data, error } = await this.client.storage
         .from(bucket)
@@ -179,10 +189,10 @@ export class SupabaseService {
   private async ensureValidSignedUrl(doc: any): Promise<ExternalDocument> {
     const now = new Date()
     const oneDayFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000) // +1 día
-    
+
     let needsNewUrl = false
     let currentSignedUrl = doc.signed_url || ''
-    
+
     // Verificar si necesita nueva URL
     if (!doc.signed_url || !doc.signed_url_expires_at) {
       needsNewUrl = true
@@ -191,31 +201,43 @@ export class SupabaseService {
       const expiresAt = new Date(doc.signed_url_expires_at)
       if (expiresAt <= oneDayFromNow) {
         needsNewUrl = true
-        console.log(`🔄 Document ${doc.id}: URL expires soon (${expiresAt.toISOString()})`)
+        console.log(
+          `🔄 Document ${doc.id}: URL expires soon (${expiresAt.toISOString()})`
+        )
       }
     }
-    
+
     // Generar nueva URL si es necesario
     if (needsNewUrl && doc.storage_path) {
       try {
-        const newUrlData = await this.generateAndStoreSignedUrl(doc.id, doc.storage_path)
+        const newUrlData = await this.generateAndStoreSignedUrl(
+          doc.id,
+          doc.storage_path
+        )
         currentSignedUrl = newUrlData.signedUrl
         console.log(`✅ Generated new signed URL for document ${doc.id}`)
       } catch (urlError) {
-        console.error(`❌ Failed to generate signed URL for document ${doc.id}:`, urlError)
+        console.error(
+          `❌ Failed to generate signed URL for document ${doc.id}:`,
+          urlError
+        )
         // Mantener URL actual o vacía según especificación
       }
     }
-    
+
     // Extraer el nombre del área de la estructura de relación
     let areaName = ''
-    if (doc.document_areas && Array.isArray(doc.document_areas) && doc.document_areas.length > 0) {
+    if (
+      doc.document_areas &&
+      Array.isArray(doc.document_areas) &&
+      doc.document_areas.length > 0
+    ) {
       const firstArea = doc.document_areas[0]
       if (firstArea.areas && firstArea.areas.name) {
         areaName = firstArea.areas.name
       }
     }
-    
+
     return {
       id: doc.id,
       signedUrl: currentSignedUrl,
@@ -226,39 +248,49 @@ export class SupabaseService {
       updatedAt: doc.updated_at,
       storagePath: doc.storage_path || '',
       signedUrlExpiresAt: doc.signed_url_expires_at,
-      alias: doc.alias || '',           // ✅ Nuevo campo con fallback
+      alias: doc.alias || '', // ✅ Nuevo campo con fallback
       description: doc.description || '', // ✅ Nuevo campo con fallback
-      area: areaName                    // ✅ Nuevo campo desde relación
+      area: areaName, // ✅ Nuevo campo desde relación
     }
   }
-  
+
   /**
    * Genera una nueva URL firmada y la almacena en la base de datos
    */
-  private async generateAndStoreSignedUrl(documentId: string, storagePath: string): Promise<{ signedUrl: string, expiresAt: Date }> {
+  private async generateAndStoreSignedUrl(
+    documentId: string,
+    storagePath: string
+  ): Promise<{ signedUrl: string; expiresAt: Date }> {
     const sevenDaysInSeconds = 7 * 24 * 60 * 60 // 7 días en segundos
     const expiresAt = new Date(Date.now() + sevenDaysInSeconds * 1000)
-    
+
     // Generar URL firmada en Storage usando el método auxiliar
-    const signedUrl = await this.getSignedUrl('documents', storagePath, sevenDaysInSeconds)
-    
+    const signedUrl = await this.getSignedUrl(
+      'documents',
+      storagePath,
+      sevenDaysInSeconds
+    )
+
     // Actualizar base de datos con nueva URL
     const { error: updateError } = await this.client
       .from('documents')
       .update({
         signed_url: signedUrl,
-        signed_url_expires_at: expiresAt.toISOString()
+        signed_url_expires_at: expiresAt.toISOString(),
       })
       .eq('id', documentId)
-    
+
     if (updateError) {
-      console.warn(`⚠️ Failed to update signed URL in database for ${documentId}:`, updateError.message)
+      console.warn(
+        `⚠️ Failed to update signed URL in database for ${documentId}:`,
+        updateError.message
+      )
       // No lanzar error, la URL sigue siendo válida aunque no se actualice en BD
     }
-    
+
     return {
       signedUrl: signedUrl,
-      expiresAt
+      expiresAt,
     }
   }
 }

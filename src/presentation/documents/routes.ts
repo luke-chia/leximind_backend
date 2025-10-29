@@ -4,7 +4,7 @@ import { DocumentsDependencies } from './dependencies.js'
 
 /**
  * DocumentsRoutes
- * 
+ *
  * Responsibilities:
  * - Define HTTP routes for document operations
  * - Configure multer for file upload handling
@@ -12,7 +12,6 @@ import { DocumentsDependencies } from './dependencies.js'
  * - Route requests to appropriate controller methods
  */
 export class DocumentsRoutes {
-  
   /**
    * Configure multer for in-memory file storage
    * This approach avoids writing files to disk and handles them in memory
@@ -29,9 +28,13 @@ export class DocumentsRoutes {
         if (file.mimetype === 'application/pdf') {
           cb(null, true)
         } else {
-          cb(new Error(`Invalid file type: ${file.mimetype}. Only PDF files are allowed.`))
+          cb(
+            new Error(
+              `Invalid file type: ${file.mimetype}. Only PDF files are allowed.`
+            )
+          )
         }
-      }
+      },
     })
   }
 
@@ -54,7 +57,8 @@ export class DocumentsRoutes {
 
     // Document upload route with multer middleware
     // Expects: multipart/form-data with 'file' field + optional metadata fields
-    router.post('/upload', 
+    router.post(
+      '/upload',
       upload.single('file'), // Handle single file upload with field name 'file'
       controller.uploadDocument
     )
@@ -63,7 +67,7 @@ export class DocumentsRoutes {
     router.use((error: any, req: any, res: any, next: any) => {
       if (error instanceof multer.MulterError) {
         console.error('❌ Multer error:', error)
-        
+
         let message = 'File upload error'
         let statusCode = 400
 
@@ -86,7 +90,7 @@ export class DocumentsRoutes {
           error: 'upload_error',
           message,
           code: error.code,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         })
       }
 
@@ -96,7 +100,7 @@ export class DocumentsRoutes {
           status: 'error',
           error: 'invalid_file_type',
           message: error.message,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         })
       }
 

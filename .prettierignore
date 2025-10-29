@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code
+.claude/
+
+# Documentation (if you want to preserve formatting)
+documentation/
+CLAUDE.md
+
+# Package lock files (auto-generated)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Compiled JavaScript
+*.js
+*.mjs
+*.cjs

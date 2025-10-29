@@ -1,4 +1,5 @@
 import { Router } from 'express'
+
 import { AuthRoutes } from './auth/routes.js'
 import { ChatsRoutes } from './chats/routes.js'
 import { DocumentsRoutes } from './documents/routes.js'

@@ -1,5 +1,5 @@
-import express from 'express'
 import cors from 'cors'
+import express from 'express'
 import { Router } from 'express'
 
 interface ServerOptions {
@@ -10,7 +10,7 @@ interface ServerOptions {
 const allowedOrigins = [
   'http://localhost:8080', // dev vite
   'http://localhost:3000', // dev express directo
-  'https://leximind.vercel.app', // prod en Vercel
+  'https://leximind-ia.vercel.app', // prod en Vercel
 ]
 
 export class Server {
@@ -25,7 +25,7 @@ export class Server {
     this.routes = routes
   }
 
-  async start() {
+  start() {
     //Middlewares
     this.app.use(express.json())
     this.app.use(express.urlencoded({ extended: true }))
@@ -35,7 +35,9 @@ export class Server {
       cors({
         origin: (origin, callback) => {
           // Si no viene "origin" (ej. Postman/curl), permitir
-          if (!origin) return callback(null, true)
+          if (!origin) {
+            return callback(null, true)
+          }
 
           if (allowedOrigins.includes(origin)) {
             callback(null, true)
@@ -51,22 +53,24 @@ export class Server {
 
     this.app.use(this.routes)
     this.app
-      .listen(this.port, async () => {
+      .listen(this.port, () => {
         const host = process.env.HOST || 'localhost'
-        console.log(
+        console.info(
           '🚀 Leximind API corriendo en: ',
           `http://${host}:${this.port}`
         )
         // Run startup tasks (e.g., Supabase cache)
-        try {
-          const startupModule = await import('./startup/startup-tasks.js');
-          await startupModule.runOnStartup();
-        } catch (error) {
-          console.error('Failed to run startup tasks:', error);
-        }
+        void (async () => {
+          try {
+            const startupModule = await import('./startup/startup-tasks.js')
+            await startupModule.runOnStartup()
+          } catch (error) {
+            console.error('Failed to run startup tasks:', error)
+          }
+        })()
       })
       .on('error', (error) => {
-        console.log(error)
+        console.error(error)
       })
   }
 }

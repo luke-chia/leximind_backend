@@ -4,7 +4,7 @@ export interface SourceDto {
   source: string
   documentId: string
   score: string
-  signedUrl?: string  // URL firmada del documento (opcional)
+  signedUrl?: string // URL firmada del documento (opcional)
 }
 
 export class ProcessMessageResponseDto {
@@ -12,6 +12,6 @@ export class ProcessMessageResponseDto {
     public readonly response: string,
     public readonly timestamp: string,
     public readonly sources: SourceDto[],
-    public readonly resumeQuestion: string  // ✅ NUEVO CAMPO - Resumen de la pregunta (5 palabras o menos)
+    public readonly resumeQuestion: string // ✅ NUEVO CAMPO - Resumen de la pregunta (5 palabras o menos)
   ) {}
 }

@@ -24,8 +24,9 @@ export class Document {
   // Método para extraer información de página desde metadata o chunk_id
   static extractPageInfo(metadata: Record<string, any>): string {
     if (metadata.page !== undefined) return metadata.page.toString()
-    if (metadata.page_number !== undefined) return metadata.page_number.toString()
-    
+    if (metadata.page_number !== undefined)
+      return metadata.page_number.toString()
+
     // Intentar extraer de chunk_id si existe
     if (metadata.chunk_id !== undefined) {
       try {
@@ -35,7 +36,7 @@ export class Document {
         return 'N/A'
       }
     }
-    
+
     return 'N/A'
   }
 }

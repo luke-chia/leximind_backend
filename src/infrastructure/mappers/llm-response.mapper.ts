@@ -6,12 +6,11 @@ import {
 import { Source } from '../../domain/entities/source.entity.js'
 
 export class LLMResponseMapper {
-
   static toProcessMessageResponseDto(
     llmResponse: LLMResponse,
-    resumeQuestion: string  // ✅ NUEVO PARÁMETRO - Resumen de la pregunta
+    resumeQuestion: string // ✅ NUEVO PARÁMETRO - Resumen de la pregunta
   ): ProcessMessageResponseDto {
-    const sourcesDto: SourceDto[] = llmResponse.sources.map(source => 
+    const sourcesDto: SourceDto[] = llmResponse.sources.map((source) =>
       this.toSourceDto(source)
     )
 
@@ -19,7 +18,7 @@ export class LLMResponseMapper {
       llmResponse.response,
       llmResponse.timestamp.toISOString(),
       sourcesDto,
-      resumeQuestion  // ✅ NUEVO CAMPO
+      resumeQuestion // ✅ NUEVO CAMPO
     )
   }
 
@@ -30,7 +29,7 @@ export class LLMResponseMapper {
       source: source.source,
       documentId: source.documentId,
       score: source.score,
-      signedUrl: source.signedUrl || ''  // Fallback a vacío si no existe
+      signedUrl: source.signedUrl || '', // Fallback a vacío si no existe
     }
   }
 }

@@ -5,7 +5,7 @@ import { PineconeService } from '../../infrastructure/services/pinecone.service.
 
 /**
  * DocumentsDependencies
- * 
+ *
  * Responsibilities:
  * - Manage dependency injection for document-related features
  * - Provide singleton instances of services and adapters
@@ -45,7 +45,7 @@ export class DocumentsDependencies {
     if (!DocumentsDependencies.uploadAdapter) {
       const embeddingsService = DocumentsDependencies.getEmbeddingsService()
       const pineconeService = DocumentsDependencies.getPineconeService()
-      
+
       DocumentsDependencies.uploadAdapter = new UploadAdapter(
         embeddingsService,
         pineconeService
@@ -60,7 +60,7 @@ export class DocumentsDependencies {
   static getController(): DocumentsController {
     if (!DocumentsDependencies.controller) {
       const uploadAdapter = DocumentsDependencies.getUploadAdapter()
-      
+
       DocumentsDependencies.controller = new DocumentsController(uploadAdapter)
     }
     return DocumentsDependencies.controller

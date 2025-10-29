@@ -20,16 +20,20 @@ export class LLMService implements LLMRepository {
     try {
       // Log de filtros aplicados
       const filtros = this.buildFiltersLog(chatMessage)
-      const filtrosTexto = filtros.length > 0 ? ` | Filtros: ${filtros.join(' | ')}` : ''
-      console.log(`💬 LLMService.processMessage --> Procesando mensaje de usuario ${chatMessage.userId}: "${chatMessage.message}"${filtrosTexto}`)
+      const filtrosTexto =
+        filtros.length > 0 ? ` | Filtros: ${filtros.join(' | ')}` : ''
+      console.log(
+        `💬 LLMService.processMessage --> Procesando mensaje de usuario ${chatMessage.userId}: "${chatMessage.message}"${filtrosTexto}`
+      )
 
       // Construir filtros para la búsqueda vectorial
       const searchFilters = this.buildVectorSearchFilters(chatMessage)
-      
+
       // Usar áreas como filtros de metadata
-      const areas = chatMessage.area && chatMessage.area.length > 0 
-        ? chatMessage.area 
-        : undefined
+      const areas =
+        chatMessage.area && chatMessage.area.length > 0
+          ? chatMessage.area
+          : undefined
 
       // Procesar consulta usando RAG
       const ragResponse = await this.ragAdapter.processQuery(
@@ -38,23 +42,20 @@ export class LLMService implements LLMRepository {
           areas,
           topK: 10,
           filters: searchFilters,
-          systemPrompt: this.getSystemPrompt()
+          systemPrompt: this.getSystemPrompt(),
         }
       )
 
       // Convertir documentos encontrados a Sources
-      const sources = DocumentMapper.toSources(ragResponse.queryResult.documents)
-
-      // Crear respuesta LLM
-      return new LLMResponse(
-        ragResponse.answer,
-        new Date(),
-        sources
+      const sources = DocumentMapper.toSources(
+        ragResponse.queryResult.documents
       )
 
+      // Crear respuesta LLM
+      return new LLMResponse(ragResponse.answer, new Date(), sources)
     } catch (error) {
       console.error('❌ Error al procesar mensaje con RAG:', error)
-      
+
       // Fallback: respuesta de error
       return new LLMResponse(
         'Lo siento, ocurrió un error al procesar tu consulta. Por favor, intenta de nuevo más tarde.',
@@ -69,7 +70,7 @@ export class LLMService implements LLMRepository {
    */
   private buildFiltersLog(chatMessage: ChatMessage): string[] {
     const filtros = []
-    
+
     if (chatMessage.area && chatMessage.area.length > 0) {
       filtros.push(`Áreas: [${chatMessage.area.join(', ')}]`)
     }
@@ -82,28 +83,30 @@ export class LLMService implements LLMRepository {
     if (chatMessage.tags && chatMessage.tags.length > 0) {
       filtros.push(`Tags: [${chatMessage.tags.join(', ')}]`)
     }
-    
+
     return filtros
   }
 
   /**
    * Construye los filtros para la búsqueda vectorial
    */
-  private buildVectorSearchFilters(chatMessage: ChatMessage): VectorSearchFilters {
+  private buildVectorSearchFilters(
+    chatMessage: ChatMessage
+  ): VectorSearchFilters {
     const filters: VectorSearchFilters = {}
-    
+
     if (chatMessage.category && chatMessage.category.length > 0) {
       filters.category = chatMessage.category
     }
-    
+
     if (chatMessage.source && chatMessage.source.length > 0) {
       filters.source = chatMessage.source
     }
-    
+
     if (chatMessage.tags && chatMessage.tags.length > 0) {
       filters.tags = chatMessage.tags
     }
-    
+
     return filters
   }
 
@@ -112,27 +115,30 @@ export class LLMService implements LLMRepository {
    */
   async generateQuestionSummary(question: string): Promise<string> {
     try {
-      console.log(`🔤 Generando resumen para pregunta: "${question.substring(0, 50)}..."`)
-      
+      console.log(
+        `🔤 Generando resumen para pregunta: "${question.substring(0, 50)}..."`
+      )
+
       const prompt = this.getQuestionSummaryPrompt()
       const fullPrompt = `${prompt}\n\nPregunta: "${question}"\nResumen:`
-      
+
       // Usar OpenAI para generar el resumen
       const openAIService = new OpenAIService()
       const response = await openAIService.generateSimpleCompletion(fullPrompt)
-      
+
       const summary = response.trim()
       console.log(`✅ Resumen generado: "${summary}"`)
-      
+
       // Validar que no exceda 5 palabras
       const wordCount = summary.split(' ').length
       if (wordCount > 5) {
-        console.warn(`⚠️ Resumen excede 5 palabras (${wordCount}), truncando...`)
+        console.warn(
+          `⚠️ Resumen excede 5 palabras (${wordCount}), truncando...`
+        )
         return summary.split(' ').slice(0, 5).join(' ')
       }
-      
+
       return summary
-      
     } catch (error) {
       console.error('❌ Error generando resumen de pregunta:', error)
       // Fallback: usar las primeras 3 palabras de la pregunta

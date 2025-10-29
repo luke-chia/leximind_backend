@@ -15,7 +15,7 @@ export class QueryResult {
   }
 
   get sources(): string[] {
-    return [...new Set(this.documents.map(doc => doc.source))]
+    return [...new Set(this.documents.map((doc) => doc.source))]
   }
 
   static create(

@@ -4,7 +4,7 @@ import { CacheService } from '../../infrastructure/services/cache.service.js'
 
 /**
  * DocumentsController
- * 
+ *
  * Responsibilities:
  * - Handle HTTP requests for document operations
  * - Parse multipart/form-data uploads
@@ -32,7 +32,7 @@ export class DocumentsController {
         return res.status(400).json({
           status: 'error',
           error: 'No file provided',
-          message: 'A PDF file is required'
+          message: 'A PDF file is required',
         })
       }
 
@@ -44,7 +44,10 @@ export class DocumentsController {
         return res.status(400).json({
           status: 'error',
           error: 'Invalid file',
-          message: validationError instanceof Error ? validationError.message : 'File validation failed'
+          message:
+            validationError instanceof Error
+              ? validationError.message
+              : 'File validation failed',
         })
       }
 
@@ -58,24 +61,28 @@ export class DocumentsController {
         return res.status(400).json({
           status: 'error',
           error: 'invalid_document_id',
-          message: 'documentId is required and must be a UUID string'
+          message: 'documentId is required and must be a UUID string',
         })
       }
 
-      const isUuidV4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(documentIdRaw)
+      const isUuidV4 =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          documentIdRaw
+        )
       if (!isUuidV4) {
         return res.status(400).json({
           status: 'error',
           error: 'invalid_document_id',
-          message: 'documentId must be a valid UUID v4'
+          message: 'documentId must be a valid UUID v4',
         })
       }
 
       // Parse optional savepdf flag
       const savePdfRaw = req.body.savepdf
-      const savePdf = typeof savePdfRaw === 'string'
-        ? ['true', '1', 'yes', 'on'].includes(savePdfRaw.toLowerCase())
-        : Boolean(savePdfRaw)
+      const savePdf =
+        typeof savePdfRaw === 'string'
+          ? ['true', '1', 'yes', 'on'].includes(savePdfRaw.toLowerCase())
+          : Boolean(savePdfRaw)
 
       // Process the uploaded document
       console.log(`🚀 Starting document processing...`)
@@ -95,27 +102,27 @@ export class DocumentsController {
         filename: result.filename,
         totalPages: result.totalPages,
         processingTimeMs: result.processingTime,
-        message: `Document processed successfully into ${result.chunksProcessed} chunks`
+        message: `Document processed successfully into ${result.chunksProcessed} chunks`,
       })
-
     } catch (error) {
       console.error('❌ Error in document upload:', error)
-      
+
       // Determine appropriate error status code
-      const isClientError = error instanceof Error && (
-        error.message.includes('validation') ||
-        error.message.includes('Invalid') ||
-        error.message.includes('No text content')
-      )
-      
+      const isClientError =
+        error instanceof Error &&
+        (error.message.includes('validation') ||
+          error.message.includes('Invalid') ||
+          error.message.includes('No text content'))
+
       const statusCode = isClientError ? 400 : 500
       const errorType = isClientError ? 'validation_error' : 'processing_error'
 
       return res.status(statusCode).json({
         status: 'error',
         error: errorType,
-        message: error instanceof Error ? error.message : 'Unknown error occurred',
-        timestamp: new Date().toISOString()
+        message:
+          error instanceof Error ? error.message : 'Unknown error occurred',
+        timestamp: new Date().toISOString(),
       })
     }
   }
@@ -137,24 +144,23 @@ export class DocumentsController {
         services: {
           embeddings: {
             status: healthStatus.embeddings ? 'up' : 'down',
-            description: 'OpenAI Embeddings Service'
+            description: 'OpenAI Embeddings Service',
           },
           vectorDatabase: {
             status: healthStatus.pinecone ? 'up' : 'down',
-            description: 'Pinecone Vector Database'
-          }
+            description: 'Pinecone Vector Database',
+          },
         },
-        overall: healthStatus.overall
+        overall: healthStatus.overall,
       })
-
     } catch (error) {
       console.error('❌ Error in health check:', error)
-      
+
       return res.status(500).json({
         status: 'error',
         timestamp: new Date().toISOString(),
         error: 'Health check failed',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error',
       })
     }
   }
@@ -169,7 +175,7 @@ export class DocumentsController {
 
       // Obtener estadísticas del cache
       const stats = CacheService.getStats()
-      
+
       // Obtener información adicional
       const documentsWithUrls = CacheService.getDocumentsWithSignedUrls()
       const documentsWithoutUrls = CacheService.getDocumentsWithoutSignedUrls()
@@ -182,25 +188,31 @@ export class DocumentsController {
           totalSizeMB: +(stats.totalSize / 1024 / 1024).toFixed(2),
           averageSizeMB: +(stats.averageSize / 1024 / 1024).toFixed(2),
           lastUpdated: stats.lastUpdated,
-          cacheAgeMinutes: Math.round(stats.cacheAge / 1000 / 60)
+          cacheAgeMinutes: Math.round(stats.cacheAge / 1000 / 60),
         },
         signedUrls: {
           documentsWithUrls: stats.documentsWithSignedUrls,
           documentsWithoutUrls: stats.documentsWithoutSignedUrls,
-          urlCoverage: stats.totalDocuments > 0 
-            ? +((stats.documentsWithSignedUrls / stats.totalDocuments) * 100).toFixed(1)
-            : 0
-        }
+          urlCoverage:
+            stats.totalDocuments > 0
+              ? +(
+                  (stats.documentsWithSignedUrls / stats.totalDocuments) *
+                  100
+                ).toFixed(1)
+              : 0,
+        },
       })
-
     } catch (error) {
       console.error('❌ Error getting document statistics:', error)
-      
+
       return res.status(500).json({
         status: 'error',
         timestamp: new Date().toISOString(),
         error: 'stats_error',
-        message: error instanceof Error ? error.message : 'Failed to retrieve statistics'
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to retrieve statistics',
       })
     }
   }
@@ -209,7 +221,10 @@ export class DocumentsController {
    * Get all documents from cache with pagination
    * GET /api/documents/list?limit=10&offset=0
    */
-  getCachedDocuments = async (req: Request, res: Response): Promise<Response> => {
+  getCachedDocuments = async (
+    req: Request,
+    res: Response
+  ): Promise<Response> => {
     try {
       console.log('📦 Cached documents requested')
 
@@ -222,7 +237,7 @@ export class DocumentsController {
         return res.status(400).json({
           status: 'error',
           error: 'invalid_limit',
-          message: 'Limit must be between 1 and 100'
+          message: 'Limit must be between 1 and 100',
         })
       }
 
@@ -230,20 +245,22 @@ export class DocumentsController {
         return res.status(400).json({
           status: 'error',
           error: 'invalid_offset',
-          message: 'Offset must be 0 or greater'
+          message: 'Offset must be 0 or greater',
         })
       }
 
       // Obtener documentos del cache
       const allDocuments = CacheService.getDocuments()
-      
+
       // Aplicar paginación
       const paginatedDocuments = allDocuments.slice(offset, offset + limit)
-      
+
       // Obtener información del cache
       const cacheInfo = CacheService.getCacheInfo()
 
-      console.log(`📦 Returning ${paginatedDocuments.length} documents (${offset}-${offset + paginatedDocuments.length} of ${allDocuments.length})`)
+      console.log(
+        `📦 Returning ${paginatedDocuments.length} documents (${offset}-${offset + paginatedDocuments.length} of ${allDocuments.length})`
+      )
 
       return res.status(200).json({
         status: 'success',
@@ -253,14 +270,14 @@ export class DocumentsController {
           offset,
           total: allDocuments.length,
           returned: paginatedDocuments.length,
-          hasMore: offset + limit < allDocuments.length
+          hasMore: offset + limit < allDocuments.length,
         },
         cache: {
           totalDocuments: allDocuments.length,
           lastUpdated: cacheInfo.lastUpdated,
-          isExpired: cacheInfo.isExpired
+          isExpired: cacheInfo.isExpired,
         },
-        documents: paginatedDocuments.map(doc => ({
+        documents: paginatedDocuments.map((doc) => ({
           id: doc.id,
           fileName: doc.fileName,
           fileSize: doc.fileSize,
@@ -270,20 +287,22 @@ export class DocumentsController {
           createdAt: doc.createdAt,
           updatedAt: doc.updatedAt,
           storagePath: doc.storagePath,
-          alias: doc.alias || '',           // ✅ NUEVO CAMPO
+          alias: doc.alias || '', // ✅ NUEVO CAMPO
           description: doc.description || '', // ✅ NUEVO CAMPO
-          area: doc.area || ''              // ✅ NUEVO CAMPO
-        }))
+          area: doc.area || '', // ✅ NUEVO CAMPO
+        })),
       })
-
     } catch (error) {
       console.error('❌ Error getting cached documents:', error)
-      
+
       return res.status(500).json({
         status: 'error',
         timestamp: new Date().toISOString(),
         error: 'cache_error',
-        message: error instanceof Error ? error.message : 'Failed to retrieve cached documents'
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to retrieve cached documents',
       })
     }
   }
@@ -308,7 +327,7 @@ export class DocumentsController {
     // Extract array fields and ensure they are arrays of strings
     const arrayFields = ['area', 'category', 'source', 'tags'] as const
 
-    arrayFields.forEach(field => {
+    arrayFields.forEach((field) => {
       if (body[field]) {
         let fieldValue = body[field]
 
@@ -318,7 +337,10 @@ export class DocumentsController {
             fieldValue = JSON.parse(fieldValue)
           } catch {
             // If not JSON, treat as comma-separated string
-            fieldValue = fieldValue.split(',').map((item: string) => item.trim()).filter(Boolean)
+            fieldValue = fieldValue
+              .split(',')
+              .map((item: string) => item.trim())
+              .filter(Boolean)
           }
         }
 
@@ -329,7 +351,9 @@ export class DocumentsController {
 
         // Filter to strings only and remove empty values
         const cleanArray = fieldValue
-          .filter((item: any) => typeof item === 'string' && item.trim().length > 0)
+          .filter(
+            (item: any) => typeof item === 'string' && item.trim().length > 0
+          )
           .map((item: string) => item.trim())
 
         if (cleanArray.length > 0) {
@@ -344,16 +368,21 @@ export class DocumentsController {
   /**
    * Handle errors consistently across controller methods
    */
-  private handleError(error: unknown, res: Response, defaultStatus = 500): Response {
+  private handleError(
+    error: unknown,
+    res: Response,
+    defaultStatus = 500
+  ): Response {
     console.error('❌ Controller error:', error)
 
-    const message = error instanceof Error ? error.message : 'An unexpected error occurred'
-    
+    const message =
+      error instanceof Error ? error.message : 'An unexpected error occurred'
+
     return res.status(defaultStatus).json({
       status: 'error',
       error: error instanceof Error ? error.constructor.name : 'UnknownError',
       message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     })
   }
 }
